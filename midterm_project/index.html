@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Grading System</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <header>
+    <h1>Student Grading System</h1>
+  </header>
+
+  <main>
+    <!-- Add Course Section -->
+    <section id="add-course-section">
+      <h2>Add Course</h2>
+      <div class="form-group">
+        <label for="course-name">Course Name</label>
+        <input type="text" id="course-name" placeholder="Enter Course Name">
+        <label for="point-scale">Grading Scale</label>
+        <select id="point-scale">
+          <option value="10" selected>10 Point Scale</option>
+          <option value="7">7 Point Scale</option>
+        </select>
+        <button id="add-course-btn">Add Course</button>
+      </div>
+    </section>
+
+    <!-- Select Course -->
+    <section id="select-course-section">
+      <h2>Select Course</h2>
+      <div class="form-group">
+        <label for="course-dropdown">Available Courses</label>
+        <select id="course-dropdown">
+          <option value="" disabled selected>Select a course</option>
+        </select>
+      </div>
+    </section>
+
+    <!-- Add Student Section -->
+    <section id="add-student-section">
+      <h2>Add Student</h2>
+      <div class="form-group">
+        <label for="student-id">Student ID</label>
+        <input type="text" id="student-id" placeholder="Student ID">
+        <label for="student-name">First Name</label>
+        <input type="text" id="student-name" placeholder="First Name">
+        <label for="student-surname">Last Name</label>
+        <input type="text" id="student-surname" placeholder="Last Name">
+        <label for="midterm-score">Midterm Score</label>
+        <input type="number" id="midterm-score" placeholder="Midterm Score">
+        <label for="final-score">Final Score</label>
+        <input type="number" id="final-score" placeholder="Final Score">
+        <button id="add-student-btn">Add Student</button>
+      </div>
+    </section>
+
+    <!-- View Students -->
+    <section id="view-students-section">
+      <h2>Students and Scores</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Surname</th>
+            <th>Midterm</th>
+            <th>Final</th>
+            <th>Grade</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="students-table"></tbody>
+      </table>
+    </section>
+
+    <!-- Search Students -->
+    <section id="search-students-section">
+      <h2>Search Students</h2>
+      <div class="form-group">
+        <input type="text" id="search-query" placeholder="Enter Student Name">
+        <button id="search-btn">Search</button>
+      </div>
+      <div id="search-results"></div>
+    </section>
+
+    <!-- Show All Students -->
+    <section id="show-all-students-section">
+      <h2>All Students</h2>
+      <button id="show-all-students-btn">Show All Students</button>
+      <div id="all-students-results"></div>
+    </section>
+    
+  </main>
+</body>
+</html>
+
+  
