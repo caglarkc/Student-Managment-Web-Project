@@ -1,7 +1,6 @@
-//Sadece update buttonunu işlevsel yapma, kodunu yazmadım ve extra courselar içinde bilgileir gerkeiyor. Kursu alan kişi sayısı not ortalaması geçen kalan sayısı gibi
-
 const courses = {};
 let currentCourse = null;
+let editingStudentId = null;
 
 // Add Course
 document.querySelector('#add-course-btn').addEventListener('click', () => {
@@ -30,6 +29,13 @@ document.querySelector('#add-course-btn').addEventListener('click', () => {
   option.textContent = courseName;
   courseDropdown.appendChild(option);
 
+  // Also add course to stats dropdown
+  const statsDropdown = document.querySelector('#course-stats-dropdown');
+  const statsOption = document.createElement('option');
+  statsOption.value = courseName;
+  statsOption.textContent = courseName;
+  statsDropdown.appendChild(statsOption);
+
   // Clear the input
   document.querySelector('#course-name').value = '';
   alert(`Course "${courseName}" added successfully!`);
@@ -57,30 +63,28 @@ document.querySelector('#add-student-btn').addEventListener('click', () => {
     return alert('Please fill in all fields.');
   }
 
-  const fullName = `${firstName} ${lastName}`;
+  const fullName = `${firstName} ${lastName}`.toLowerCase();
 
   // Check if the student already exists in this course
   const students = courses[currentCourse].students;
   const studentExistsInCurrentCourse = students.some(student =>
-    student.name.toLowerCase() === firstName.toLowerCase() &&
-    student.surname.toLowerCase() === lastName.toLowerCase()
+    (student.name.toLowerCase() + ' ' + student.surname.toLowerCase()) === fullName
   );
 
   if (studentExistsInCurrentCourse) {
-    return alert(`A student with the name "${fullName}" already exists in this course.`);
+    return alert(`A student with the name "${firstName} ${lastName}" already exists in this course.`);
   }
 
   // Check if the student exists in other courses with a different ID
   const studentExistsInOtherCourses = Object.values(courses).some(course =>
     course.students.some(student =>
-      student.name.toLowerCase() === firstName.toLowerCase() &&
-      student.surname.toLowerCase() === lastName.toLowerCase() &&
+      (student.name.toLowerCase() + ' ' + student.surname.toLowerCase()) === fullName &&
       student.id !== id
     )
   );
 
   if (studentExistsInOtherCourses) {
-    return alert(`A student with the name "${fullName}" already exists in another course with a different ID.`);
+    return alert(`A student with the name "${firstName} ${lastName}" already exists in another course with a different ID.`);
   }
 
   // Check if the ID is used by any other student across all courses
@@ -132,20 +136,109 @@ function renderStudentsTable() {
 
   courses[currentCourse].students.forEach(student => {
     const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${student.id}</td>
-      <td>${student.name}</td>
-      <td>${student.surname}</td>
-      <td>${student.midterm}</td>
-      <td>${student.final}</td>
-      <td>${student.grade}</td>
-      <td>
-        <button onclick="deleteStudent('${student.id}')">Delete</button>
-        <button onclick="updateStudent('${student.id}')">Update</button>
-      </td>
-    `;
+
+    if (student.id === editingStudentId) {
+      // In edit mode
+      tr.innerHTML = `
+        <td>${student.id}</td>
+        <td><input type="text" value="${student.name}" id="edit-name-${student.id}"></td>
+        <td><input type="text" value="${student.surname}" id="edit-surname-${student.id}"></td>
+        <td><input type="number" value="${student.midterm}" id="edit-midterm-${student.id}"></td>
+        <td><input type="number" value="${student.final}" id="edit-final-${student.id}"></td>
+        <td>${student.grade}</td>
+        <td>
+          <button onclick="cancelUpdate()">Cancel</button>
+          <button onclick="saveStudent('${student.id}')">Save</button>
+        </td>
+      `;
+    } else {
+      // Not in edit mode
+      tr.innerHTML = `
+        <td>${student.id}</td>
+        <td>${student.name}</td>
+        <td>${student.surname}</td>
+        <td>${student.midterm}</td>
+        <td>${student.final}</td>
+        <td>${student.grade}</td>
+        <td>
+          <button onclick="deleteStudent('${student.id}')">Delete</button>
+          <button onclick="updateStudent('${student.id}')">Update</button>
+        </td>
+      `;
+    }
     tbody.appendChild(tr);
   });
+}
+
+// Update Student
+function updateStudent(id) {
+  // Prevent editing multiple students at the same time
+  if (editingStudentId && editingStudentId !== id) {
+    alert('Please save or cancel the current edit before editing another student.');
+    return;
+  }
+  editingStudentId = id;
+  renderStudentsTable();
+}
+
+// Save Student
+function saveStudent(id) {
+  const nameInput = document.querySelector(`#edit-name-${id}`);
+  const surnameInput = document.querySelector(`#edit-surname-${id}`);
+  const midtermInput = document.querySelector(`#edit-midterm-${id}`);
+  const finalInput = document.querySelector(`#edit-final-${id}`);
+
+  const newName = nameInput.value.trim();
+  const newSurname = surnameInput.value.trim();
+  const newMidterm = Number(midtermInput.value);
+  const newFinal = Number(finalInput.value);
+
+  if (!newName || !newSurname || isNaN(newMidterm) || isNaN(newFinal)) {
+    return alert('Please fill in all fields.');
+  }
+
+  const student = courses[currentCourse].students.find(s => s.id === id);
+
+  // Check if any data has changed
+  if (
+    student.name === newName &&
+    student.surname === newSurname &&
+    student.midterm === newMidterm &&
+    student.final === newFinal
+  ) {
+    alert('No changes made.');
+    return;
+  }
+
+  const fullName = (newName + ' ' + newSurname).toLowerCase();
+
+  // Check for duplicate name across all courses excluding current student
+  const nameExists = Object.values(courses).some(course =>
+    course.students.some(s =>
+      (s.name.toLowerCase() + ' ' + s.surname.toLowerCase()) === fullName && s.id !== id
+    )
+  );
+
+  if (nameExists) {
+    return alert(`A student with the name "${newName} ${newSurname}" already exists.`);
+  }
+
+  // Update student data
+  student.name = newName;
+  student.surname = newSurname;
+  student.midterm = newMidterm;
+  student.final = newFinal;
+  student.grade = calculateGrade(newMidterm, newFinal, courses[currentCourse].scaleType);
+
+  // Reset editing state
+  editingStudentId = null;
+  renderStudentsTable();
+}
+
+// Cancel Update
+function cancelUpdate() {
+  editingStudentId = null;
+  renderStudentsTable();
 }
 
 // Delete Student
@@ -154,7 +247,7 @@ function deleteStudent(id) {
   renderStudentsTable();
 }
 
-// Formu Sıfırlayan Fonksiyon
+// Form Reset Function
 function resetForm() {
   document.querySelector('#student-id').value = '';
   document.querySelector('#student-name').value = '';
@@ -245,7 +338,6 @@ document.querySelector('#search-btn').addEventListener('click', () => {
   }
 });
 
-
 // Track whether the student list is currently visible
 let isStudentListVisible = false;
 
@@ -314,3 +406,58 @@ document.querySelector('#show-all-students-btn').addEventListener('click', () =>
     isStudentListVisible = true;
   }
 });
+
+// Course Statistics
+document.querySelector('#course-stats-dropdown').addEventListener('change', (e) => {
+  const selectedCourse = e.target.value;
+  renderCourseStats(selectedCourse);
+});
+
+function renderCourseStats(courseName) {
+  const resultsContainer = document.querySelector('#course-stats-results');
+  const course = courses[courseName];
+
+  if (!course || course.students.length === 0) {
+    resultsContainer.innerHTML = 'No students in this course.';
+    return;
+  }
+
+  const numStudents = course.students.length;
+
+  let totalMidterm = 0;
+  let totalFinal = 0;
+  let totalOverall = 0;
+  let numPassed = 0;
+  let numFailed = 0;
+
+  course.students.forEach(student => {
+    const midterm = student.midterm;
+    const final = student.final;
+    const total = (0.4 * midterm) + (0.6 * final);
+    totalMidterm += midterm;
+    totalFinal += final;
+    totalOverall += total;
+
+    // Determine pass/fail based on grade
+    if (student.grade !== 'F') {
+      numPassed++;
+    } else {
+      numFailed++;
+    }
+  });
+
+  const avgMidterm = (totalMidterm / numStudents).toFixed(2);
+  const avgFinal = (totalFinal / numStudents).toFixed(2);
+  const avgOverall = (totalOverall / numStudents).toFixed(2);
+
+  const statsHTML = `
+    <p><strong>Number of Students:</strong> ${numStudents}</p>
+    <p><strong>Average Midterm Score:</strong> ${avgMidterm}</p>
+    <p><strong>Average Final Score:</strong> ${avgFinal}</p>
+    <p><strong>Average Overall Score:</strong> ${avgOverall}</p>
+    <p><strong>Number of Students Passed:</strong> ${numPassed}</p>
+    <p><strong>Number of Students Failed:</strong> ${numFailed}</p>
+  `;
+
+  resultsContainer.innerHTML = statsHTML;
+}
